@@ -1,0 +1,17 @@
+# ✅ FIX #5: File ini mencegah file sensitif ter-upload ke Git
+
+# WAJIB: File konfigurasi rahasia — JANGAN PERNAH di-commit!
+.env
+.env.local
+.env.production
+
+# Dependensi Node.js — tidak perlu di-commit, jalankan 'npm install' saja
+node_modules/
+
+# Log files
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
