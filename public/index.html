@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FinSmart – Manajer Keuangan Pribadi</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    .field-hint { display:block; font-size:11.5px; color:#888; margin-top:4px; line-height:1.4; }
+    .field-hint b { color:#555; }
+    .chart-empty-state {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 8px; color: #94a3b8;
+      background: var(--surface, #fff);
+      border-radius: 8px;
+    }
+    .chart-empty-state span { font-size: 36px; opacity: .4; }
+    .chart-empty-state p { font-size: 13px; margin: 0; }
+
+    .btn-google {
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      width: 100%; padding: 10px 18px; border-radius: 9px;
+      border: 1.5px solid #dadce0; background: #fff; color: #3c4043;
+      font-size: 14px; font-weight: 500; cursor: pointer;
+      text-decoration: none; transition: box-shadow .2s, border-color .2s;
+      box-sizing: border-box;
+    }
+    .btn-google:hover { box-shadow: 0 1px 6px rgba(0,0,0,.15); border-color: #bbb; }
+
+    .auth-divider {
+      display: flex; align-items: center; gap: 12px;
+      margin: 16px 0; color: #94a3b8; font-size: 13px;
+    }
+    .auth-divider::before, .auth-divider::after {
+      content: ''; flex: 1; height: 1px; background: #e2e8f0;
+    }
+  </style>
+</head>
+<body>
+
+<div id="auth-page" class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <span class="logo-icon">💰</span>
+      <h1>FinSmart</h1>
+      <p>Kelola keuanganmu dengan cerdas</p>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="tab-btn active" onclick="showTab('login')">Masuk</button>
+      <button class="tab-btn"        onclick="showTab('register')">Daftar</button>
+    </div>
+
+    <div id="login-form">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="email@contoh.com"/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="••••••"/>
+      </div>
+      <button class="btn btn-primary w-full" onclick="login()">Masuk</button>
+
+      <div class="auth-divider"><span>atau</span></div>
+
+      <a href="/api/auth/google" class="btn btn-google w-full">
+        <svg width="18" height="18" viewBox="0 0 48 48" style="flex-shrink:0">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+        Masuk dengan Google
+      </a>
+    </div>
+
+    <div id="register-form" class="hidden">
+      <div class="form-group">
+        <label>Nama Lengkap</label>
+        <input type="text" id="reg-name" placeholder="Nama kamu"/>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="reg-email" placeholder="email@contoh.com"/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="reg-password" placeholder="Min. 8 karakter (A-Z, a-z, 0-9, simbol)"/>
+      <small class="field-hint">Contoh: <b>Rahasia@123</b> — wajib ada huruf besar, angka &amp; simbol</small>
+      </div>
+      <button class="btn btn-primary w-full" onclick="register()">Buat Akun</button>
+
+      <div class="auth-divider"><span>atau</span></div>
+
+      <a href="/api/auth/google" class="btn btn-google w-full">
+        <svg width="18" height="18" viewBox="0 0 48 48" style="flex-shrink:0">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+        Daftar dengan Google
+      </a>
+    </div>
+
+
+  </div>
+</div>
+
+<div id="app" class="hidden">
+
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <span>💰</span>
+      <span class="logo-text">FinSmart</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-page="dashboard"     onclick="navigate('dashboard')">
+        <span class="nav-icon">📊</span><span>Dashboard</span>
+      </a>
+      <a href="#" class="nav-item" data-page="transactions"         onclick="navigate('transactions')">
+        <span class="nav-icon">💳</span><span>Transaksi</span>
+      </a>
+      <a href="#" class="nav-item" data-page="budget"               onclick="navigate('budget')">
+        <span class="nav-icon">🎯</span><span>Budget</span>
+      </a>
+      <a href="#" class="nav-item" data-page="goals"                onclick="navigate('goals')">
+        <span class="nav-icon">⭐</span><span>Target Tabungan</span>
+      </a>
+      <a href="#" class="nav-item" data-page="categories"           onclick="navigate('categories')">
+        <span class="nav-icon">🏷️</span><span>Kategori</span>
+      </a>
+      <a href="#" class="nav-item" data-page="debts"               onclick="navigate('debts')">
+        <span class="nav-icon">💸</span><span>Hutang Piutang</span>
+      </a>
+      <a href="#" class="nav-item" data-page="recurring"           onclick="navigate('recurring')">
+        <span class="nav-icon">🔁</span><span>Transaksi Berulang</span>
+      </a>
+      <a href="#" class="nav-item" data-page="investments"         onclick="navigate('investments')">
+        <span class="nav-icon">📈</span><span>Portofolio</span>
+      </a>
+      <a href="#" class="nav-item" data-page="health"              onclick="navigate('health')">
+        <span class="nav-icon">🏥</span><span>Kesehatan Finansial</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <span class="user-avatar" id="user-avatar">U</span>
+        <span class="user-name" id="user-name">User</span>
+      </div>
+      <button class="btn-logout" onclick="logout()" title="Logout">⬅️</button>
+    </div>
+  </aside>
+
+  <main class="main-content" id="main-primary">
+
+    <section id="page-dashboard" class="page active">
+      <div class="page-header">
+        <h2>Dashboard</h2>
+        <div class="month-picker">
+          <input type="month" id="dash-month" onchange="loadDashboard()"/>
+        </div>
+      </div>
+
+      
+      <div class="summary-cards">
+        <div class="card card-income">
+          <div class="card-icon">📈</div>
+          <div class="card-body">
+            <span class="card-label">Total Pemasukan</span>
+            <span class="card-value" id="total-income">Rp 0</span>
+            <span class="card-sub" id="count-income">0 transaksi</span>
+          </div>
+        </div>
+        <div class="card card-expense">
+          <div class="card-icon">📉</div>
+          <div class="card-body">
+            <span class="card-label">Total Pengeluaran</span>
+            <span class="card-value" id="total-expense">Rp 0</span>
+            <span class="card-sub" id="count-expense">0 transaksi</span>
+          </div>
+        </div>
+        <div class="card card-balance">
+          <div class="card-icon">💼</div>
+          <div class="card-body">
+            <span class="card-label">Saldo Bersih</span>
+            <span class="card-value" id="total-balance">Rp 0</span>
+            <span class="card-sub">bulan ini</span>
+          </div>
+        </div>
+      </div>
+
+      
+      <div class="charts-row">
+        <div class="chart-box">
+          <h3>Pengeluaran per Kategori</h3>
+          <div class="chart-wrap" style="position:relative;">
+            <canvas id="pie-chart"></canvas>
+            <div id="pie-empty" class="chart-empty-state hidden">
+              <span>🥧</span>
+              <p>Belum ada data pengeluaran</p>
+            </div>
+          </div>
+        </div>
+        <div class="chart-box chart-box-wide">
+          <h3>Tren 6 Bulan Terakhir</h3>
+          <div class="chart-wrap"><canvas id="bar-chart"></canvas></div>
+        </div>
+      </div>
+
+      
+      <div class="card-box">
+        <h3>Transaksi Terbesar Bulan Ini</h3>
+        <div id="top-transactions"></div>
+      </div>
+    </section>
+
+    
+    <section id="page-transactions" class="page">
+      <div class="page-header">
+        <h2>Transaksi</h2>
+        <div class="header-actions">
+          <button class="btn btn-outline" onclick="exportCSV()">⬇ Export CSV</button>
+          <button class="btn btn-primary" onclick="openModal('modal-transaction')">+ Tambah</button>
+        </div>
+      </div>
+
+      
+      <div class="filter-bar">
+        <select id="filter-type" onchange="loadTransactions()">
+          <option value="">Semua Tipe</option>
+          <option value="income">Pemasukan</option>
+          <option value="expense">Pengeluaran</option>
+        </select>
+        <select id="filter-category" onchange="loadTransactions()">
+          <option value="">Semua Kategori</option>
+        </select>
+        <input type="date" id="filter-start" onchange="loadTransactions()" placeholder="Dari"/>
+        <input type="date" id="filter-end"   onchange="loadTransactions()" placeholder="Sampai"/>
+        <input type="text" id="filter-search" placeholder="Cari catatan..." oninput="debounceSearch()"/>
+        <button class="btn btn-outline" onclick="clearFilters()">Reset</button>
+      </div>
+
+      <div id="transactions-list" class="transactions-list"></div>
+    </section>
+
+    
+    <section id="page-budget" class="page">
+      <div class="page-header">
+        <h2>Budget</h2>
+        <div class="header-actions">
+          <input type="month" id="budget-month" onchange="loadBudget()"/>
+          <button class="btn btn-primary" onclick="openModal('modal-budget')">+ Set Budget</button>
+        </div>
+      </div>
+      <div id="alerts-container"></div>
+      <div id="budget-list" class="budget-list"></div>
+    </section>
+
+    
+    <section id="page-goals" class="page">
+      <div class="page-header">
+        <h2>Target Tabungan</h2>
+        <button class="btn btn-primary" onclick="openModal('modal-goal')">+ Tambah Target</button>
+      </div>
+      <div id="goals-list" class="goals-grid"></div>
+    </section>
+
+    
+    <section id="page-categories" class="page">
+      <div class="page-header">
+        <h2>Kategori</h2>
+        <button class="btn btn-primary" onclick="openModal('modal-category')">+ Tambah</button>
+      </div>
+      <div id="categories-list" class="categories-grid"></div>
+    </section>
+
+  </main>
+
+  
+  <main class="main-content" id="page-debts-wrap" style="display:none">
+    <section id="page-debts" class="page active">
+      <div class="page-header">
+        <h2>💸 Hutang Piutang</h2>
+        <button class="btn btn-primary" onclick="openDebtModal()">+ Tambah</button>
+      </div>
+      
+      <div class="summary-cards" id="debt-summary-cards">
+        <div class="card card-expense">
+          <div class="card-icon">📤</div>
+          <div class="card-body">
+            <span class="card-label">Total Hutangku</span>
+            <span class="card-value" id="debt-total-hutang">Rp 0</span>
+            <span class="card-sub">yang belum terbayar</span>
+          </div>
+        </div>
+        <div class="card card-income">
+          <div class="card-icon">📥</div>
+          <div class="card-body">
+            <span class="card-label">Total Piutang</span>
+            <span class="card-value" id="debt-total-piutang">Rp 0</span>
+            <span class="card-sub">yang belum diterima</span>
+          </div>
+        </div>
+        <div class="card card-balance">
+          <div class="card-icon">✅</div>
+          <div class="card-body">
+            <span class="card-label">Sudah Lunas</span>
+            <span class="card-value" id="debt-paid-count">0</span>
+            <span class="card-sub">data</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="filter-bar" style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;">
+        <select id="debt-filter-type" onchange="loadDebts()" class="form-select" style="min-width:140px">
+          <option value="">Semua Tipe</option>
+          <option value="debt">Hutangku</option>
+          <option value="receivable">Piutangku</option>
+        </select>
+        <select id="debt-filter-paid" onchange="loadDebts()" class="form-select" style="min-width:150px">
+          <option value="">Semua Status</option>
+          <option value="false">Belum Lunas</option>
+          <option value="true">Sudah Lunas</option>
+        </select>
+      </div>
+      
+      <div id="debt-list" class="debt-list"></div>
+    </section>
+  </main>
+
+  
+  <main class="main-content" id="page-recurring-wrap" style="display:none">
+    <section id="page-recurring" class="page active">
+      <div class="page-header">
+        <h2>🔁 Transaksi Berulang</h2>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-outline" onclick="executeAllDue()" title="Jalankan semua yang jatuh tempo hari ini">⚡ Eksekusi Hari Ini</button>
+          <button class="btn btn-primary" onclick="openRecurringModal()">+ Tambah</button>
+        </div>
+      </div>
+      <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:20px">
+        Atur transaksi yang terjadi secara rutin (gaji, tagihan, cicilan, langganan). Klik ▶ untuk jalankan sekarang.
+      </p>
+      <div id="recurring-list" class="recurring-list"></div>
+    </section>
+  </main>
+
+  
+  <main class="main-content" id="page-investments-wrap" style="display:none">
+    <section id="page-investments" class="page active">
+      <div class="page-header">
+        <h2>📈 Portofolio Investasi</h2>
+        <button class="btn btn-primary" onclick="openInvestModal()">+ Tambah Investasi</button>
+      </div>
+      
+      <div class="summary-cards">
+        <div class="card card-income">
+          <div class="card-icon">💰</div>
+          <div class="card-body">
+            <span class="card-label">Total Modal</span>
+            <span class="card-value" id="invest-total-principal">Rp 0</span>
+            <span class="card-sub" id="invest-count">0 instrumen</span>
+          </div>
+        </div>
+        <div class="card card-balance">
+          <div class="card-icon">📊</div>
+          <div class="card-body">
+            <span class="card-label">Nilai Saat Ini</span>
+            <span class="card-value" id="invest-total-current">Rp 0</span>
+            <span class="card-sub">total portofolio</span>
+          </div>
+        </div>
+        <div class="card" id="invest-pl-card">
+          <div class="card-icon">🎯</div>
+          <div class="card-body">
+            <span class="card-label">Untung / Rugi</span>
+            <span class="card-value" id="invest-total-pl">Rp 0</span>
+            <span class="card-sub" id="invest-return-pct">0%</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="charts-row" style="margin-bottom:24px">
+        <div class="chart-box">
+          <h3>Komposisi Portofolio</h3>
+          <div class="chart-wrap"><canvas id="invest-pie-chart"></canvas></div>
+        </div>
+        <div class="chart-box chart-box-wide">
+          <h3>Daftar Investasi</h3>
+          <div id="invest-list" class="invest-list"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  
+  <main class="main-content" id="page-health-wrap" style="display:none">
+    <section id="page-health" class="page active">
+      <div class="page-header">
+        <h2>🏥 Skor Kesehatan Finansial</h2>
+        <div class="month-picker">
+          <input type="month" id="health-month" onchange="loadHealthScore()"/>
+        </div>
+      </div>
+      
+      <div class="health-score-card" id="health-score-card">
+        <div class="health-score-circle" id="health-score-circle">
+          <span class="health-score-emoji" id="health-score-emoji">📊</span>
+          <span class="health-score-num" id="health-score-num">--</span>
+          <span class="health-score-label">/ 100</span>
+          <span class="health-grade" id="health-grade">-</span>
+        </div>
+        <div class="health-score-meta">
+          <h3 id="health-grade-label">Menghitung skor...</h3>
+          <p id="health-month-label" style="color:var(--text-secondary);font-size:0.9rem"></p>
+        </div>
+      </div>
+      
+      <h3 style="margin:24px 0 12px">📊 Detail Komponen Skor</h3>
+      <div id="health-components" class="health-components"></div>
+      
+      <h3 style="margin:24px 0 12px">💡 Rekomendasi Untukmu</h3>
+      <div id="health-recommendations" class="health-recommendations"></div>
+    </section>
+  </main>
+</div>
+
+
+
+
+<div id="modal-transaction" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-trans-title">Tambah Transaksi</h3>
+      <button onclick="closeModal('modal-transaction')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-trans-id"/>
+      <div class="form-group">
+        <label>Tipe</label>
+        <div class="type-toggle">
+          <button class="type-btn active" id="btn-income"  onclick="setType('income')">📈 Pemasukan</button>
+          <button class="type-btn"        id="btn-expense" onclick="setType('expense')">📉 Pengeluaran</button>
+        </div>
+        <input type="hidden" id="trans-type" value="income"/>
+      </div>
+      <div class="form-group">
+        <label>Nominal (Rp)</label>
+        <input type="number" id="trans-amount" placeholder="0" min="0"/>
+      </div>
+      <div class="form-group">
+        <label>Kategori</label>
+        <select id="trans-category"></select>
+      </div>
+      <div class="form-group">
+        <label>Tanggal</label>
+        <input type="date" id="trans-date"/>
+      </div>
+      <div class="form-group">
+        <label>Catatan</label>
+        <input type="text" id="trans-note" placeholder="Opsional..."/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-transaction')">Batal</button>
+      <button class="btn btn-primary" onclick="saveTransaction()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="modal-budget" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Set Budget Kategori</h3>
+      <button onclick="closeModal('modal-budget')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-budget-id"/>
+      <div class="form-group">
+        <label>Kategori</label>
+        <select id="budget-category"></select>
+      </div>
+      <div class="form-group">
+        <label>Limit Budget (Rp)</label>
+        <input type="number" id="budget-limit" placeholder="0" min="0"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-budget')">Batal</button>
+      <button class="btn btn-primary" onclick="saveBudget()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="modal-goal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-goal-title">Tambah Target Tabungan</h3>
+      <button onclick="closeModal('modal-goal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-goal-id"/>
+      <div class="form-group">
+        <label>Ikon</label>
+        <div class="icon-picker">
+          <span class="icon-opt" onclick="selectIcon(this)" data-icon="🎯">🎯</span>
+          <span class="icon-opt" onclick="selectIcon(this)" data-icon="🏠">🏠</span>
+          <span class="icon-opt" onclick="selectIcon(this)" data-icon="✈️">✈️</span>
+          <span class="icon-opt" onclick="selectIcon(this)" data-icon="🚗">🚗</span>
+          <span class="icon-opt" onclick="selectIcon(this)" data-icon="💍">💍</span>
+          <span class="icon-opt" onclick="selectIcon(this)" data-icon="📱">📱</span>
+          <span class="icon-opt" onclick="selectIcon(this)" data-icon="💻">💻</span>
+          <span class="icon-opt" onclick="selectIcon(this)" data-icon="🎓">🎓</span>
+        </div>
+        <input type="hidden" id="goal-icon" value="🎯"/>
+      </div>
+      <div class="form-group">
+        <label>Judul Target</label>
+        <input type="text" id="goal-title" placeholder="Misal: Dana Darurat"/>
+      </div>
+      <div class="form-group">
+        <label>Target Nominal (Rp)</label>
+        <input type="number" id="goal-target" placeholder="0" min="1"/>
+      </div>
+      <div class="form-group">
+        <label>Deadline</label>
+        <input type="date" id="goal-deadline"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-goal')">Batal</button>
+      <button class="btn btn-primary" onclick="saveGoal()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="modal-topup" class="modal-overlay hidden">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>Tambah Tabungan</h3>
+      <button onclick="closeModal('modal-topup')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="topup-goal-id"/>
+      <div id="topup-remaining-info" style="background:var(--bg-secondary);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:0.88rem;color:var(--text-secondary)"></div>
+      <div class="form-group">
+        <label>Nominal Topup (Rp)</label>
+        <input type="number" id="topup-amount" placeholder="0" min="1"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-topup')">Batal</button>
+      <button class="btn btn-primary" onclick="topupGoal()">Tambahkan</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="modal-category" class="modal-overlay hidden">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>Tambah Kategori</h3>
+      <button onclick="closeModal('modal-category')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Nama</label>
+        <input type="text" id="cat-name" placeholder="Nama kategori"/>
+      </div>
+      <div class="form-group">
+        <label>Ikon</label>
+        <div class="emoji-picker-wrapper">
+          <button type="button" class="emoji-trigger" id="emoji-trigger" onclick="toggleEmojiPicker()">
+            <span id="emoji-preview">🏷️</span>
+            <span class="emoji-trigger-label">Pilih Ikon</span>
+            <span class="emoji-trigger-arrow">▾</span>
+          </button>
+          <input type="hidden" id="cat-icon" value="🏷️"/>
+          <div class="emoji-dropdown hidden" id="emoji-dropdown">
+            <div class="emoji-search-wrap">
+              <input type="text" class="emoji-search" id="emoji-search" placeholder="🔍 Cari emoji..." oninput="filterEmoji(this.value)"/>
+            </div>
+            <div class="emoji-categories-nav" id="emoji-cats-nav"></div>
+            <div class="emoji-grid" id="emoji-grid"></div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Warna</label>
+        <input type="color" id="cat-color" value="#6366f1"/>
+      </div>
+      <div class="form-group">
+        <label>Tipe</label>
+        <select id="cat-type">
+          <option value="both">Semua</option>
+          <option value="income">Pemasukan</option>
+          <option value="expense">Pengeluaran</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-category')">Batal</button>
+      <button class="btn btn-primary" onclick="saveCategory()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="modal-debt" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-debt-title">Tambah Hutang / Piutang</h3>
+      <button onclick="closeModal('modal-debt')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-debt-id"/>
+      <div class="form-group">
+        <label>Tipe</label>
+        <div class="type-toggle">
+          <button class="type-btn active" id="btn-debt"       onclick="setDebtType('debt')">📤 Hutangku</button>
+          <button class="type-btn"        id="btn-receivable" onclick="setDebtType('receivable')">📥 Piutangku</button>
+        </div>
+        <input type="hidden" id="debt-type" value="debt"/>
+      </div>
+      <div class="form-group">
+        <label id="debt-person-label">Nama Kreditur (yang memberi hutang)</label>
+        <input type="text" id="debt-person" placeholder="Nama orang / lembaga"/>
+      </div>
+      <div class="form-group">
+        <label>Nominal (Rp)</label>
+        <input type="number" id="debt-amount" placeholder="0" min="1"/>
+      </div>
+      <div class="form-group">
+        <label>Jatuh Tempo (opsional)</label>
+        <input type="date" id="debt-due"/>
+      </div>
+      <div class="form-group">
+        <label>Keterangan (opsional)</label>
+        <input type="text" id="debt-desc" placeholder="Misal: pinjam untuk bayar sewa"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-debt')">Batal</button>
+      <button class="btn btn-primary" onclick="saveDebt()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="modal-debt-pay" class="modal-overlay hidden">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3 id="modal-pay-title">Catat Pembayaran</h3>
+      <button onclick="closeModal('modal-debt-pay')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="pay-debt-id"/>
+      <div id="pay-remaining-info" style="background:var(--bg-secondary);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:0.88rem;color:var(--text-secondary)"></div>
+      <div class="form-group">
+        <label>Nominal Pembayaran (Rp)</label>
+        <input type="number" id="pay-amount" placeholder="0" min="1"/>
+      </div>
+      <div class="form-group">
+        <label>Catatan (opsional)</label>
+        <input type="text" id="pay-note" placeholder="Misal: cicilan ke-1"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-debt-pay')">Batal</button>
+      <button class="btn btn-primary" onclick="payDebt()">Catat</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="modal-recurring" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-recurring-title">Tambah Transaksi Berulang</h3>
+      <button onclick="closeModal('modal-recurring')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-recurring-id"/>
+      <div class="form-group">
+        <label>Nama / Judul</label>
+        <input type="text" id="recurring-title" placeholder="Misal: Gaji Bulanan, Bayar Kos"/>
+      </div>
+      <div class="form-group">
+        <label>Tipe</label>
+        <div class="type-toggle">
+          <button class="type-btn active" id="btn-rec-income"  onclick="setRecType('income')">📈 Pemasukan</button>
+          <button class="type-btn"        id="btn-rec-expense" onclick="setRecType('expense')">📉 Pengeluaran</button>
+        </div>
+        <input type="hidden" id="recurring-type" value="income"/>
+      </div>
+      <div class="form-group">
+        <label>Nominal (Rp)</label>
+        <input type="number" id="recurring-amount" placeholder="0" min="1"/>
+      </div>
+      <div class="form-group">
+        <label>Kategori</label>
+        <select id="recurring-category"></select>
+      </div>
+      <div class="form-group">
+        <label>Frekuensi</label>
+        <select id="recurring-frequency" onchange="toggleDayOfMonth()">
+          <option value="daily">Harian</option>
+          <option value="weekly">Mingguan</option>
+          <option value="monthly" selected>Bulanan</option>
+          <option value="yearly">Tahunan</option>
+        </select>
+      </div>
+      <div class="form-group" id="recurring-day-group">
+        <label>Tanggal Eksekusi (tiap bulan)</label>
+        <input type="number" id="recurring-day" placeholder="1" min="1" max="31" value="1"/>
+      </div>
+      <div class="form-group">
+        <label>Tanggal Mulai</label>
+        <input type="date" id="recurring-start"/>
+      </div>
+      <div class="form-group">
+        <label>Tanggal Berakhir (opsional)</label>
+        <input type="date" id="recurring-end"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-recurring')">Batal</button>
+      <button class="btn btn-primary" onclick="saveRecurring()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="modal-investment" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-invest-title">Tambah Investasi</h3>
+      <button onclick="closeModal('modal-investment')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-invest-id"/>
+      <div class="form-group">
+        <label>Nama Investasi</label>
+        <input type="text" id="invest-name" placeholder="Misal: Reksa Dana Syariah, BBCA"/>
+      </div>
+      <div class="form-group">
+        <label>Jenis Instrumen</label>
+        <select id="invest-type">
+          <option value="saham">📊 Saham</option>
+          <option value="reksa_dana">📁 Reksa Dana</option>
+          <option value="deposito">🏦 Deposito</option>
+          <option value="emas">🥇 Emas</option>
+          <option value="kripto">🪙 Kripto</option>
+          <option value="obligasi">📜 Obligasi</option>
+          <option value="properti">🏠 Properti</option>
+          <option value="lainnya">📦 Lainnya</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Kode / Ticker (opsional)</label>
+        <input type="text" id="invest-ticker" placeholder="Misal: BBCA, BTC"/>
+      </div>
+      <div class="form-group">
+        <label>Modal Awal (Rp)</label>
+        <input type="number" id="invest-principal" placeholder="0" min="0"/>
+      </div>
+      <div class="form-group">
+        <label>Nilai Saat Ini (Rp)</label>
+        <input type="number" id="invest-current" placeholder="0" min="0"/>
+      </div>
+      <div class="form-group">
+        <label>Tanggal Mulai</label>
+        <input type="date" id="invest-start"/>
+      </div>
+      <div class="form-group">
+        <label>Catatan (opsional)</label>
+        <input type="text" id="invest-notes" placeholder="Opsional..."/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-investment')">Batal</button>
+      <button class="btn btn-primary" onclick="saveInvestment()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="modal-invest-value" class="modal-overlay hidden">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>Update Nilai Investasi</h3>
+      <button onclick="closeModal('modal-invest-value')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="update-invest-id"/>
+      <div id="invest-current-info" style="background:var(--bg-secondary);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:0.88rem;color:var(--text-secondary)"></div>
+      <div class="form-group">
+        <label>Nilai Terbaru (Rp)</label>
+        <input type="number" id="invest-new-value" placeholder="0" min="0"/>
+      </div>
+      <div class="form-group">
+        <label>Catatan (opsional)</label>
+        <input type="text" id="invest-value-note" placeholder="Misal: Update per April 2025"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-invest-value')">Batal</button>
+      <button class="btn btn-primary" onclick="updateInvestValue()">Update</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="toast" class="toast hidden"></div>
+
+
+<script src="/js/main.js"></script>
+<script src="/js/transactions.js"></script>
+<script src="/js/budget.js"></script>
+<script src="/js/goals.js"></script>
+<script src="/js/charts.js"></script>
+<script src="/js/debts.js"></script>
+<script src="/js/recurring.js"></script>
+<script src="/js/investments.js"></script>
+<script src="/js/health.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,180 @@
+<%# views/transactions/index.ejs — Modul 10: EJS View Engine %>
+<%# Data diterima dari controller via res.render('transactions/index', { title, user, transactions, formatRupiah }) %>
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <%# Tag <%= %> — output variabel, otomatis di-escape dari XSS %>
+  <title><%= title %> — FinSmart</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #1D9E75; --primary-dk: #085041; --danger: #ef4444;
+      --bg: #f8fafc; --surface: #ffffff; --border: #e2e8f0;
+      --text: #1e293b; --muted: #64748b; --radius: 8px;
+    }
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    .navbar { background: var(--primary-dk); color: white; padding: .75rem 1.5rem; display: flex; align-items: center; justify-content: space-between; }
+    .navbar-brand { font-size: 1.25rem; font-weight: 700; color: white; text-decoration: none; }
+    .container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .page-header { margin-bottom: 1.5rem; }
+    .page-header h1 { font-size: 1.5rem; font-weight: 700; }
+    .page-header p  { color: var(--muted); font-size: .9rem; margin-top: .25rem; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-card  { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; }
+    .stat-label { font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+    .stat-value { font-size: 1.3rem; font-weight: 700; margin-top: .25rem; }
+    .stat-value.income  { color: #16a34a; }
+    .stat-value.expense { color: var(--danger); }
+    .stat-value.balance { color: var(--primary); }
+    .table-wrapper { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th { background: #f1f5f9; font-size: .78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: .75rem 1rem; text-align: left; }
+    tbody tr { border-top: 1px solid var(--border); }
+    tbody tr:hover { background: #f8fafc; }
+    tbody td { padding: .75rem 1rem; font-size: .875rem; }
+    .badge { display: inline-block; padding: .2rem .65rem; border-radius: 999px; font-size: .72rem; font-weight: 600; }
+    .badge-income  { background: #dcfce7; color: #166534; }
+    .badge-expense { background: #fee2e2; color: #991b1b; }
+    .amount-income  { color: #16a34a; font-weight: 600; }
+    .amount-expense { color: var(--danger); font-weight: 600; }
+    .empty-state { text-align: center; padding: 3rem 1rem; color: var(--muted); }
+    .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
+    .cat-chip { display: inline-flex; align-items: center; gap: .35rem; font-size: .8rem; background: #f1f5f9; padding: .15rem .5rem; border-radius: 4px; }
+    footer { text-align: center; padding: 2rem; font-size: .8rem; color: var(--muted); border-top: 1px solid var(--border); margin-top: 3rem; }
+  </style>
+</head>
+<body>
+
+<%# Partial navbar — menggunakan <%- %> agar HTML tidak di-escape %>
+<%- include('../partials/navbar') %>
+
+<div class="container">
+
+  <div class="page-header">
+    <%# Menampilkan variabel 'title' yang dikirim dari controller %>
+    <h1><%= title %></h1>
+    <%# Mengakses properti dari objek 'user' %>
+    <p>Halo, <strong><%= user.name %></strong> — berikut riwayat transaksi kamu</p>
+  </div>
+
+  <%# ─── Hitung statistik dengan JavaScript di EJS ──────────────────────── %>
+  <%
+    // Kode JS di dalam <% %> tidak menghasilkan output, hanya dieksekusi
+    const totalIncome  = transactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const totalExpense = transactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const balance = totalIncome - totalExpense;
+  %>
+
+  <%# ─── Kartu Statistik ─────────────────────────────────────────────────── %>
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total Pemasukan</div>
+      <%# formatRupiah adalah fungsi helper yang dikirim dari controller %>
+      <div class="stat-value income"><%= formatRupiah(totalIncome) %></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Pengeluaran</div>
+      <div class="stat-value expense"><%= formatRupiah(totalExpense) %></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Saldo Bersih</div>
+      <div class="stat-value balance"><%= formatRupiah(balance) %></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Jumlah Transaksi</div>
+      <div class="stat-value" style="color:var(--text)"><%= transactions.length %></div>
+    </div>
+  </div>
+
+  <%# ─── Tabel Transaksi ─────────────────────────────────────────────────── %>
+  <%# Kontrol alur: cek apakah array transaksi kosong %>
+  <% if (transactions.length === 0) { %>
+
+    <div class="empty-state">
+      <div class="icon">📭</div>
+      <p>Belum ada transaksi yang dicatat.</p>
+      <p style="margin-top:.5rem;font-size:.85rem;">Tambahkan transaksi pertamamu melalui aplikasi.</p>
+    </div>
+
+  <% } else { %>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Tanggal</th>
+            <th>Tipe</th>
+            <th>Kategori</th>
+            <th>Catatan</th>
+            <th style="text-align:right">Nominal</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <%# Loop setiap transaksi menggunakan forEach %>
+          <% transactions.forEach(function(tx) { %>
+            <tr>
+              <%# Pemrosesan tanggal langsung di template %>
+              <td style="color:var(--muted); white-space:nowrap">
+                <%= new Date(tx.date).toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' }) %>
+              </td>
+
+              <%# Kondisional untuk menampilkan badge berbeda berdasarkan tipe %>
+              <td>
+                <% if (tx.type === 'income') { %>
+                  <span class="badge badge-income">⬆ Pemasukan</span>
+                <% } else { %>
+                  <span class="badge badge-expense">⬇ Pengeluaran</span>
+                <% } %>
+              </td>
+
+              <%# Optional chaining: tampilkan nama kategori jika ada %>
+              <td>
+                <% if (tx.category) { %>
+                  <span class="cat-chip">
+                    <%= tx.category.icon || '📦' %> <%= tx.category.name %>
+                  </span>
+                <% } else { %>
+                  <span style="color:var(--muted)">—</span>
+                <% } %>
+              </td>
+
+              <%# Tampilkan catatan jika ada, dash jika kosong %>
+              <td style="color:var(--muted)"><%= tx.note || '—' %></td>
+
+              <%# Warna nominal berbeda berdasarkan tipe transaksi %>
+              <td style="text-align:right">
+                <span class="<%= tx.type === 'income' ? 'amount-income' : 'amount-expense' %>">
+                  <%= tx.type === 'income' ? '+' : '-' %><%= formatRupiah(tx.amount) %>
+                </span>
+              </td>
+            </tr>
+          <% }) %>
+
+        </tbody>
+      </table>
+    </div>
+
+    <%# Info jumlah data yang ditampilkan %>
+    <p style="margin-top:.75rem; font-size:.8rem; color:var(--muted); text-align:right">
+      Menampilkan <%= transactions.length %> transaksi
+    </p>
+
+  <% } %>
+
+</div><%# /container %>
+
+<%- include('../partials/footer') %>
+
+</body>
+</html>

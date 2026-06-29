@@ -1,0 +1,12 @@
+<%# views/partials/navbar.ejs — Partial template, disertakan via <%- include() %> %>
+<nav class="navbar">
+  <a href="/" class="navbar-brand">💰 FinSmart</a>
+  <div class="navbar-user">
+    <%# Tampilkan nama user jika tersedia, gunakan optional chaining %>
+    <% if (typeof user !== 'undefined' && user) { %>
+      Halo, <strong><%= user.name %></strong>
+    <% } else { %>
+      <a href="/login.html" style="color:white; text-decoration:none;">Login</a>
+    <% } %>
+  </div>
+</nav>

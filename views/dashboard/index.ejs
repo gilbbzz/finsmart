@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — FinSmart</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --primary:#1D9E75; --primary-dk:#085041; --bg:#f8fafc; --surface:#fff; --border:#e2e8f0; --text:#1e293b; --muted:#64748b; --radius:8px; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    .navbar { background: var(--primary-dk); color: white; padding: .75rem 1.5rem; display:flex; align-items:center; justify-content:space-between; }
+    .navbar-brand { font-size: 1.25rem; font-weight: 700; color: white; text-decoration: none; }
+    .container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
+    .card-label { font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: .5rem; }
+    .card-value { font-size: 1.4rem; font-weight: 700; }
+    .income  { color: #16a34a; }
+    .expense { color: #ef4444; }
+    .balance { color: var(--primary); }
+    .section-title { font-size: 1rem; font-weight: 600; margin-bottom: .75rem; margin-top: 1.5rem; }
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th { background: #f1f5f9; font-size: .78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: .6rem 1rem; text-align: left; }
+    tbody tr { border-top: 1px solid var(--border); }
+    tbody tr:hover { background: #f8fafc; }
+    tbody td { padding: .65rem 1rem; font-size: .875rem; }
+    .badge { display:inline-block; padding: .18rem .6rem; border-radius: 999px; font-size: .72rem; font-weight: 600; }
+    .badge-income  { background: #dcfce7; color: #166534; }
+    .badge-expense { background: #fee2e2; color: #991b1b; }
+    footer { text-align:center; padding:2rem; font-size:.8rem; color:var(--muted); border-top:1px solid var(--border); margin-top:3rem; }
+  </style>
+</head>
+<body>
+
+<%- include('../partials/navbar') %>
+
+<div class="container">
+  <h1>
+    Dashboard
+    <span style="font-size:.9rem; font-weight:400; color:var(--muted); margin-left:.5rem"><%= month %></span>
+  </h1>
+
+  <% const balance = summary.income.total - summary.expense.total; %>
+
+  <div class="grid">
+    <div class="card">
+      <div class="card-label">Pemasukan Bulan Ini</div>
+      <div class="card-value income"><%= formatRupiah(summary.income.total) %></div>
+      <div style="font-size:.78rem; color:var(--muted); margin-top:.25rem"><%= summary.income.count %> transaksi</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Pengeluaran Bulan Ini</div>
+      <div class="card-value expense"><%= formatRupiah(summary.expense.total) %></div>
+      <div style="font-size:.78rem; color:var(--muted); margin-top:.25rem"><%= summary.expense.count %> transaksi</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Saldo Bersih</div>
+      <div class="card-value balance"><%= formatRupiah(balance) %></div>
+      <div style="font-size:.78rem; color:var(--muted); margin-top:.25rem">
+        <% if (balance >= 0) { %>✅ Positif<% } else { %>⚠️ Defisit<% } %>
+      </div>
+    </div>
+  </div>
+
+  <% if (summary.categoryData && summary.categoryData.length > 0) { %>
+    <div class="section-title">Pengeluaran per Kategori</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Kategori</th><th style="text-align:right">Total</th><th style="text-align:right">%</th></tr>
+        </thead>
+        <tbody>
+          <% summary.categoryData.forEach(function(item) { %>
+            <% const pct = summary.expense.total > 0 ? Math.round((item.total / summary.expense.total) * 100) : 0; %>
+            <tr>
+              <td><%= item.category.icon %> <%= item.category.name %></td>
+              <td style="text-align:right; color:#ef4444; font-weight:600"><%= formatRupiah(item.total) %></td>
+              <td style="text-align:right; color:var(--muted)"><%= pct %>%</td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+
+  <% if (summary.topTransactions && summary.topTransactions.length > 0) { %>
+    <div class="section-title">Transaksi Terbesar Bulan Ini</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Tanggal</th><th>Tipe</th><th>Catatan</th><th style="text-align:right">Nominal</th></tr>
+        </thead>
+        <tbody>
+          <% summary.topTransactions.forEach(function(tx) { %>
+            <tr>
+              <td style="color:var(--muted); white-space:nowrap">
+                <%= new Date(tx.date).toLocaleDateString('id-ID', { day:'2-digit', month:'short' }) %>
+              </td>
+              <td>
+                <span class="badge <%= tx.type === 'income' ? 'badge-income' : 'badge-expense' %>">
+                  <%= tx.type === 'income' ? 'Pemasukan' : 'Pengeluaran' %>
+                </span>
+              </td>
+              <td style="color:var(--muted)"><%= tx.note || '—' %></td>
+              <td style="text-align:right; font-weight:600; color:<%= tx.type === 'income' ? '#16a34a' : '#ef4444' %>">
+                <%= formatRupiah(tx.amount) %>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+
+</div>
+
+<%- include('../partials/footer') %>
+</body>
+</html>

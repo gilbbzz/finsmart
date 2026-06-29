@@ -1,0 +1,4 @@
+<%# views/partials/footer.ejs %>
+<footer>
+  <p>&copy; <%= new Date().getFullYear() %> FinSmart — Smart Economy Personal Finance Manager</p>
+</footer>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detail Transaksi — FinSmart</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --primary-dk:#085041; --border:#e2e8f0; --bg:#f8fafc; --surface:#fff; --muted:#64748b; --radius:8px; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: #1e293b; }
+    .navbar { background: var(--primary-dk); color: white; padding: .75rem 1.5rem; display:flex; align-items:center; justify-content:space-between; }
+    .navbar-brand { font-size: 1.25rem; font-weight: 700; color: white; text-decoration: none; }
+    .container { max-width: 640px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem 2rem; }
+    .card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem; color: #1e293b; }
+    .field { display: flex; justify-content: space-between; align-items: center; padding: .6rem 0; border-bottom: 1px solid #f1f5f9; font-size: .9rem; }
+    .field:last-child { border-bottom: none; }
+    .field-label { color: var(--muted); font-size: .82rem; }
+    .field-value { font-weight: 500; }
+    .back-link { display: inline-block; margin-bottom: 1.25rem; font-size: .875rem; color: var(--primary-dk); text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+    .amount-income  { color: #16a34a; font-size: 1.3rem; font-weight: 700; }
+    .amount-expense { color: #ef4444; font-size: 1.3rem; font-weight: 700; }
+    footer { text-align:center; padding:2rem; font-size:.8rem; color:var(--muted); border-top:1px solid var(--border); margin-top:3rem; }
+  </style>
+</head>
+<body>
+
+<%- include('../partials/navbar') %>
+
+<div class="container">
+  <a href="/transactions/view" class="back-link">← Kembali ke daftar</a>
+
+  <div class="card">
+    <div class="card-title">🧾 Detail Transaksi</div>
+
+    <div class="field">
+      <span class="field-label">Tanggal</span>
+      <span class="field-value">
+        <%= new Date(transaction.date).toLocaleDateString('id-ID', { weekday:'long', day:'2-digit', month:'long', year:'numeric' }) %>
+      </span>
+    </div>
+
+    <div class="field">
+      <span class="field-label">Tipe</span>
+      <span class="field-value">
+        <% if (transaction.type === 'income') { %>
+          ⬆ <span style="color:#16a34a">Pemasukan</span>
+        <% } else { %>
+          ⬇ <span style="color:#ef4444">Pengeluaran</span>
+        <% } %>
+      </span>
+    </div>
+
+    <div class="field">
+      <span class="field-label">Nominal</span>
+      <span class="<%= transaction.type === 'income' ? 'amount-income' : 'amount-expense' %>">
+        <%= transaction.type === 'income' ? '+' : '-' %><%= formatRupiah(transaction.amount) %>
+      </span>
+    </div>
+
+    <div class="field">
+      <span class="field-label">Kategori</span>
+      <span class="field-value">
+        <% if (transaction.category) { %>
+          <%= transaction.category.icon %> <%= transaction.category.name %>
+        <% } else { %>
+          <span style="color:var(--muted)">Tidak ada kategori</span>
+        <% } %>
+      </span>
+    </div>
+
+    <div class="field">
+      <span class="field-label">Catatan</span>
+      <span class="field-value" style="color:<%= transaction.note ? 'inherit' : 'var(--muted)' %>">
+        <%= transaction.note || '—' %>
+      </span>
+    </div>
+
+    <div class="field">
+      <span class="field-label">Ditambahkan</span>
+      <span class="field-value" style="font-size:.82rem; color:var(--muted)">
+        <%= new Date(transaction.createdAt).toLocaleString('id-ID') %>
+      </span>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>
+</body>
+</html>
